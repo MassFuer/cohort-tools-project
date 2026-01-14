@@ -8,33 +8,13 @@ const mongoose = require("mongoose");
 
 const cookieParser = require("cookie-parser");
 const swaggerUi = require("swagger-ui-express");
-const swaggerJsdoc = require("swagger-jsdoc");
+const swaggerDocument = require("./swagger-output.json");
 
 const PORT = process.env.PORT || 5005;
 
 // IMPORT MODELS
 const Cohort = require("./models/Cohort.model");
 const Student = require("./models/Student.model");
-
-// SWAGGER CONFIGURATION
-const swaggerOptions = {
-  definition: {
-    openapi: "3.0.0",
-    info: {
-      title: "Cohort Tools API",
-      version: "1.0.0",
-      description: "API for managing cohorts and students",
-    },
-    servers: [
-      {
-        url: `http://localhost:${PORT}`,
-      },
-    ],
-  },
-  apis: ["./app.js"], // Path to the API docs
-};
-
-const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
 // INITIALIZE EXPRESS APP - https://expressjs.com/en/4x/api.html#express
 const app = express();
@@ -48,70 +28,27 @@ mongoose
   .catch((err) => console.error("Error connecting to MongoDB", err));
 
 // MIDDLEWARE
-// CORS goes first
-app.use(
-  cors({
-    // Add the URLs of allowed origins to this array
-    origin: ["http://localhost:5173"],
-  })
-);
-// Then Helmet for security purposes
+app.use(cors({ origin: ["http://localhost:5173"] }));
 app.use(helmet());
-// Then other middlewares
 app.use(express.json());
 app.use(morgan("dev"));
 app.use(express.static("public"));
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-// ROUTES - https://expressjs.com/en/starter/basic-routing.html
+// ROUTES
 
 // Swagger UI route
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
+// Docs route
 app.get("/docs", (req, res) => {
   res.sendFile(__dirname + "/views/docs.html");
 });
 
-/**
- * @swagger
- * /api/cohorts:
- *   get:
- *     summary: Get all cohorts
- *     description: Retrieve a list of all cohorts
- *     responses:
- *       200:
- *         description: A list of cohorts
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   _id:
- *                     type: number
- *                   cohortSlug:
- *                     type: string
- *                   cohortName:
- *                     type: string
- *                   program:
- *                     type: string
- *                   campus:
- *                     type: string
- *                   startDate:
- *                     type: string
- *                   endDate:
- *                     type: string
- *                   inProgress:
- *                     type: boolean
- *                   programManager:
- *                     type: string
- *                   leadTeacher:
- *                     type: string
- *                   totalHours:
- *                     type: number
- */
+// ==================== COHORT ROUTES ====================
+
+// GET /api/cohorts - Get all cohorts
 app.get("/api/cohorts", async (req, res) => {
   try {
     const cohorts = await Cohort.find();
@@ -122,52 +59,7 @@ app.get("/api/cohorts", async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /api/cohorts/{cohortId}:
- *   get:
- *     summary: Get a cohort by ID
- *     description: Retrieve a single cohort by its ID
- *     parameters:
- *       - in: path
- *         name: cohortId
- *         required: true
- *         schema:
- *           type: string
- *         description: The cohort ID
- *     responses:
- *       200:
- *         description: A single cohort
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 _id:
- *                   type: number
- *                 cohortSlug:
- *                   type: string
- *                 cohortName:
- *                   type: string
- *                 program:
- *                   type: string
- *                 campus:
- *                   type: string
- *                 startDate:
- *                   type: string
- *                 endDate:
- *                   type: string
- *                 inProgress:
- *                   type: boolean
- *                 programManager:
- *                   type: string
- *                 leadTeacher:
- *                   type: string
- *                 totalHours:
- *                   type: number
- *       404:
- *         description: Cohort not found
- */
+// GET /api/cohorts/:cohortId - Get a cohort by ID
 app.get("/api/cohorts/:cohortId", async (req, res) => {
   const { cohortId } = req.params;
 
@@ -185,49 +77,59 @@ app.get("/api/cohorts/:cohortId", async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /api/students:
- *   get:
- *     summary: Get all students
- *     description: Retrieve a list of all students
- *     responses:
- *       200:
- *         description: A list of students
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   _id:
- *                     type: number
- *                   firstName:
- *                     type: string
- *                   lastName:
- *                     type: string
- *                   email:
- *                     type: string
- *                   phone:
- *                     type: string
- *                   linkedinUrl:
- *                     type: string
- *                   languages:
- *                     type: array
- *                     items:
- *                       type: string
- *                   program:
- *                     type: string
- *                   background:
- *                     type: string
- *                   image:
- *                     type: string
- *                   cohort:
- *                     type: number
- *                   projects:
- *                     type: array
- */
+// POST /api/cohorts - Create a new cohort
+app.post("/api/cohorts", async (req, res) => {
+  try {
+    const newCohort = await Cohort.create(req.body);
+    res.status(201).json(newCohort);
+  } catch (error) {
+    console.error("Error creating cohort:", error);
+    res.status(500).json({ message: "Error creating cohort" });
+  }
+});
+
+// PUT /api/cohorts/:cohortId - Update a cohort by ID
+app.put("/api/cohorts/:cohortId", async (req, res) => {
+  const { cohortId } = req.params;
+
+  try {
+    const updatedCohort = await Cohort.findByIdAndUpdate(cohortId, req.body, {
+      new: true,
+      runValidators: true
+    });
+
+    if (!updatedCohort) {
+      return res.status(404).json({ message: "Cohort not found" });
+    }
+
+    res.json(updatedCohort);
+  } catch (error) {
+    console.error("Error updating cohort:", error);
+    res.status(500).json({ message: "Error updating cohort" });
+  }
+});
+
+// DELETE /api/cohorts/:cohortId - Delete a cohort by ID
+app.delete("/api/cohorts/:cohortId", async (req, res) => {
+  const { cohortId } = req.params;
+
+  try {
+    const deletedCohort = await Cohort.findByIdAndDelete(cohortId);
+
+    if (!deletedCohort) {
+      return res.status(404).json({ message: "Cohort not found" });
+    }
+
+    res.json({ message: "Cohort deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting cohort:", error);
+    res.status(500).json({ message: "Error deleting cohort" });
+  }
+});
+
+// ==================== STUDENT ROUTES ====================
+
+// GET /api/students - Get all students
 app.get("/api/students", async (req, res) => {
   try {
     const students = await Student.find().populate("cohort");
@@ -238,25 +140,7 @@ app.get("/api/students", async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /api/students/cohort/{cohortId}:
- *   get:
- *     summary: Get all students from a specific cohort
- *     description: Retrieve all students belonging to a specific cohort
- *     parameters:
- *       - in: path
- *         name: cohortId
- *         required: true
- *         schema:
- *           type: string
- *         description: The cohort ID
- *     responses:
- *       200:
- *         description: A list of students in the cohort
- *       404:
- *         description: No students found for this cohort
- */
+// GET /api/students/cohort/:cohortId - Get all students from a specific cohort
 app.get("/api/students/cohort/:cohortId", async (req, res) => {
   const { cohortId } = req.params;
 
@@ -269,56 +153,7 @@ app.get("/api/students/cohort/:cohortId", async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /api/students/{studentId}:
- *   get:
- *     summary: Get a student by ID
- *     description: Retrieve a single student by their ID
- *     parameters:
- *       - in: path
- *         name: studentId
- *         required: true
- *         schema:
- *           type: string
- *         description: The student ID
- *     responses:
- *       200:
- *         description: A single student
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 _id:
- *                   type: number
- *                 firstName:
- *                   type: string
- *                 lastName:
- *                   type: string
- *                 email:
- *                   type: string
- *                 phone:
- *                   type: string
- *                 linkedinUrl:
- *                   type: string
- *                 languages:
- *                   type: array
- *                   items:
- *                     type: string
- *                 program:
- *                   type: string
- *                 background:
- *                   type: string
- *                 image:
- *                   type: string
- *                 cohort:
- *                   type: number
- *                 projects:
- *                   type: array
- *       404:
- *         description: Student not found
- */
+// GET /api/students/:studentId - Get a student by ID
 app.get("/api/students/:studentId", async (req, res) => {
   const { studentId } = req.params;
 
@@ -333,6 +168,56 @@ app.get("/api/students/:studentId", async (req, res) => {
   } catch (error) {
     console.error("Error fetching student:", error);
     res.status(500).json({ message: "Error fetching student" });
+  }
+});
+
+// POST /api/students - Create a new student
+app.post("/api/students", async (req, res) => {
+  try {
+    const newStudent = await Student.create(req.body);
+    res.status(201).json(newStudent);
+  } catch (error) {
+    console.error("Error creating student:", error);
+    res.status(500).json({ message: "Error creating student" });
+  }
+});
+
+// PUT /api/students/:studentId - Update a student by ID
+app.put("/api/students/:studentId", async (req, res) => {
+  const { studentId } = req.params;
+
+  try {
+    const updatedStudent = await Student.findByIdAndUpdate(studentId, req.body, {
+      new: true,
+      runValidators: true
+    }).populate("cohort");
+
+    if (!updatedStudent) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    res.json(updatedStudent);
+  } catch (error) {
+    console.error("Error updating student:", error);
+    res.status(500).json({ message: "Error updating student" });
+  }
+});
+
+// DELETE /api/students/:studentId - Delete a student by ID
+app.delete("/api/students/:studentId", async (req, res) => {
+  const { studentId } = req.params;
+
+  try {
+    const deletedStudent = await Student.findByIdAndDelete(studentId);
+
+    if (!deletedStudent) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    res.json({ message: "Student deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting student:", error);
+    res.status(500).json({ message: "Error deleting student" });
   }
 });
 

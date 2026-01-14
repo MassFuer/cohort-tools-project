@@ -1,56 +1,64 @@
 const mongoose = require("mongoose");
-const Schema = mongoose.Schema;
+const { Schema, model } = mongoose;
 
 // CREATE SCHEMA
 const studentSchema = new Schema({
   firstName: {
     type: String,
-    required: true
+    required: true,
   },
   lastName: {
     type: String,
-    required: true
+    required: true,
   },
   email: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
   },
   phone: {
     type: String,
-    required: true
+    required: true,
   },
   linkedinUrl: {
     type: String,
-    default: ""
+    default: "",
   },
   languages: {
     type: [String],
-    enum: ["English", "Spanish", "French", "German", "Portuguese", "Dutch", "Other"]
+    enum: [
+      "English",
+      "Spanish",
+      "French",
+      "German",
+      "Portuguese",
+      "Dutch",
+      "Other",
+    ],
   },
   program: {
     type: String,
-    enum: ["Web Dev", "UX/UI", "Data Analytics", "Cybersecurity"]
+    enum: ["Web Dev", "UX/UI", "Data Analytics", "Cybersecurity"],
   },
   background: {
     type: String,
-    default: ""
+    default: "",
   },
   image: {
     type: String,
-    default: "https://i.imgur.com/r8bo8u7.png"
+    default: "https://i.imgur.com/r8bo8u7.png",
   },
   cohort: {
     type: Schema.Types.ObjectId,
-    ref: "Cohort"
+    ref: "Cohort",
   },
   projects: {
-    type: [String]
-  }
+    type: [String],
+  },
 });
 
 // CREATE MODEL
-const Student = mongoose.model("Student", studentSchema);
+const Student = model("Student", studentSchema);
 
 // EXPORT
 module.exports = Student;
