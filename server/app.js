@@ -48,10 +48,16 @@ app.get("/docs", (req, res) => {
 
 // ==================== COHORT ROUTES ====================
 
-// GET /api/cohorts - Get all cohorts
+// GET /api/cohorts - Get all cohorts (with optional filtering)
 app.get("/api/cohorts", async (req, res) => {
   try {
-    const cohorts = await Cohort.find();
+    const { campus, program } = req.query;
+    const filter = {};
+
+    if (campus) filter.campus = campus;
+    if (program) filter.program = program;
+
+    const cohorts = await Cohort.find(filter);
     res.json(cohorts);
   } catch (error) {
     console.error("Error fetching cohorts:", error);
