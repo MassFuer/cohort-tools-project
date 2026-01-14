@@ -16,30 +16,15 @@ function CohortListPage() {
   };
 
   useEffect(() => {
-    let queryString = "";
-    if (campusQuery) queryString += `campus=${campusQuery}&`;
-    if (programQuery) queryString += `program=${programQuery}`;
+    const params = new URLSearchParams();
+    if (campusQuery) params.append("campus", campusQuery);
+    if (programQuery) params.append("program", programQuery);
 
     axios
-      .get(`${API_URL}/api/cohorts?${queryString}`)
-      .then((response) => {
-        setCohorts(response.data);
-      })
+      .get(`${API_URL}/api/cohorts?${params}`)
+      .then((response) => setCohorts(response.data))
       .catch((error) => console.log(error));
   }, [campusQuery, programQuery]);
-
-  const getAllCohorts = () => {
-    axios
-      .get(`${API_URL}/api/cohorts`)
-      .then((response) => {
-        setCohorts(response.data);
-      })
-      .catch((error) => console.log(error));
-  };
-
-  useEffect(() => {
-    getAllCohorts();
-  }, []);
 
   return (
     <div className="CohortListPage">
