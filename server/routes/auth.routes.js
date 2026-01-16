@@ -63,4 +63,8 @@ router.post("/login", async (req, res) => {
   }
 });
 
+// GET /api/auth/verify - Verify JWT token
+router.get("/verify", isAuthenticated, (req, res) => {
+  res.status(200).json({ message: "Token is valid", payload: req.payload });
+});
 module.exports = router;
