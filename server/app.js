@@ -16,6 +16,7 @@ const PORT = process.env.PORT || 5005;
 const authRoutes = require("./routes/auth.routes");
 const cohortRoutes = require("./routes/cohort.routes");
 const studentRoutes = require("./routes/student.routes");
+const userRoutes = require("./routes/user.routes");
 
 // INITIALIZE EXPRESS APP - https://expressjs.com/en/4x/api.html#express
 const app = express();
@@ -52,6 +53,7 @@ app.get("/docs", (req, res) => {
 app.use("/auth", authRoutes);
 app.use("/api/cohorts", cohortRoutes);
 app.use("/api/students", studentRoutes);
+app.use("/api/user", userRoutes);
 
 // START SERVER
 app.listen(PORT, () => {
