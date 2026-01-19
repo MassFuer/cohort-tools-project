@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import zxcvbn from "zxcvbn";
 
 // Import the string from the .env with URL of the API/server - http://localhost:5005
 const API_URL = import.meta.env.VITE_API_URL;
@@ -11,11 +12,21 @@ function SignupPage() {
   const [username, setUsername] = useState("");
   const [errorMessage, setErrorMessage] = useState(undefined);
   const [validationErrors, setValidationErrors] = useState({});
+  const [passwordStrength, setPasswordStrength] = useState(null);
 
   const navigate = useNavigate();
 
   const handleEmail = (e) => setEmail(e.target.value);
-  const handlePassword = (e) => setPassword(e.target.value);
+  const handlePassword = (e) => {
+    const newPassword = e.target.value;
+    setPassword(newPassword);
+    if (newPassword) {
+      const result = zxcvbn(newPassword);
+      setPasswordStrength(result);
+    } else {
+      setPasswordStrength(null);
+    }
+  };
   const handleUsername = (e) => setUsername(e.target.value);
 
   const handleSignupSubmit = (e) => {
@@ -96,9 +107,46 @@ function SignupPage() {
           id="password"
           value={password}
           onChange={handlePassword}
-          className="border rounded p-2 w-full mb-6"
+          className="border rounded p-2 w-full mb-2"
           autoComplete="off"
         />
+        {passwordStrength && (
+          <div className="mb-4">
+            <div className="flex items-center mb-1">
+              <span className="text-sm text-gray-600 mr-2">Password Strength:</span>
+              <div className="flex-1 bg-gray-200 rounded-full h-2">
+                <div
+                  className={`h-2 rounded-full ${
+                    passwordStrength.score === 0 ? 'bg-red-500' :
+                    passwordStrength.score === 1 ? 'bg-orange-500' :
+                    passwordStrength.score === 2 ? 'bg-yellow-500' :
+                    passwordStrength.score === 3 ? 'bg-blue-500' :
+                    'bg-green-500'
+                  }`}
+                  style={{ width: `${(passwordStrength.score + 1) * 20}%` }}
+                ></div>
+              </div>
+              <span className={`text-sm ml-2 ${
+                passwordStrength.score === 0 ? 'text-red-500' :
+                passwordStrength.score === 1 ? 'text-orange-500' :
+                passwordStrength.score === 2 ? 'text-yellow-500' :
+                passwordStrength.score === 3 ? 'text-blue-500' :
+                'text-green-500'
+              }`}>
+                {passwordStrength.score === 0 ? 'Very Weak' :
+                 passwordStrength.score === 1 ? 'Weak' :
+                 passwordStrength.score === 2 ? 'Fair' :
+                 passwordStrength.score === 3 ? 'Good' :
+                 'Strong'}
+              </span>
+            </div>
+            {passwordStrength.score < 3 && passwordStrength.feedback.suggestions.length > 0 && (
+              <p className="text-sm text-gray-600">
+                Suggestions: {passwordStrength.feedback.suggestions.join(', ')}
+              </p>
+            )}
+          </div>
+        )}
         {validationErrors.password && (
           <p className="text-red-500 text-sm mb-4">
             {validationErrors.password}
