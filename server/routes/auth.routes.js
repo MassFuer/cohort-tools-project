@@ -44,17 +44,19 @@ router.post("/login", async (req, res) => {
           .status(401)
           .json({ errorMessage: "Invalid email or password" });
       } else {
-        const authToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-          algorithm: "HS256",
-          expiresIn: "6h",
+        const authToken = jwt.sign(
+          { userId: user._id },
+          process.env.JWT_SECRET,
+          {
+            algorithm: "HS256",
+            expiresIn: "6h",
+          }
+        );
+        res.status(200).json({
+          message: "Congrats u're logged in",
+          authToken: authToken,
+          userId: user._id,
         });
-        res
-          .status(200)
-          .json({
-            message: "Congrats u're logged in",
-            token: authToken,
-            userId: user._id,
-          });
       }
     }
   } catch (error) {
