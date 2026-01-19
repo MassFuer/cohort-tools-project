@@ -2,11 +2,30 @@ const router = require("express").Router();
 const User = require("../models/User.model");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const rateLimit = require("express-rate-limit");
 
 const { isAuthenticated } = require("../middleware/jwt.middlewares");
 
+// Rate limiter for signup: 5 requests per hour per IP
+const signupLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5, // Limit each IP to 5 signup requests per windowMs
+  message: "Too many signup attempts from this IP, please try again later.",
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
+// Rate limiter for login: 10 requests per hour per IP
+const loginLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10, // Limit each IP to 10 login requests per windowMs
+  message: "Too many login attempts from this IP, please try again later.",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // POST /api/auth/signup - User registration
-router.post("/signup", async (req, res) => {
+router.post("/signup", signupLimiter, async (req, res) => {
   try {
     const { username, email, password } = req.body;
     const existingUser = await User.findOne({ email });
@@ -29,7 +48,7 @@ router.post("/signup", async (req, res) => {
 });
 
 // POST /api/auth/login - User login
-router.post("/login", async (req, res) => {
+router.post("/login", loginLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
@@ -50,7 +69,7 @@ router.post("/login", async (req, res) => {
           {
             algorithm: "HS256",
             expiresIn: "6h",
-          }
+          },
         );
         res.status(200).json({
           message: "Congrats u're logged in",
@@ -67,7 +86,9 @@ router.post("/login", async (req, res) => {
 
 // GET /api/auth/verify - Verify JWT token
 router.get("/verify", isAuthenticated, async (req, res) => {
-  const currentLoggedUser = await User.findById(req.payload.userId).select("-password");
+  const currentLoggedUser = await User.findById(req.payload.userId).select(
+    "-password",
+  );
   res.status(200).json({ message: "Token is valid", currentLoggedUser });
 });
 module.exports = router;
