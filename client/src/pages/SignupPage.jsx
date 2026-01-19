@@ -10,6 +10,7 @@ function SignupPage() {
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [errorMessage, setErrorMessage] = useState(undefined);
+  const [validationErrors, setValidationErrors] = useState({});
 
   const navigate = useNavigate();
 
@@ -31,11 +32,24 @@ function SignupPage() {
         navigate("/login");
       })
       .catch((error) => {
-        const errorDescription =
-          error.response?.data?.message ||
-          error.response?.data?.errorMessage ||
-          "Signup failed";
-        setErrorMessage(errorDescription);
+        console.log("Error response:", error.response?.data);
+        if (error.response?.data?.errors) {
+          // Handle validation errors
+          const errors = {};
+          error.response.data.errors.forEach((err) => {
+            errors[err.path] = err.msg;
+          });
+          console.log("Setting validation errors:", errors);
+          setValidationErrors(errors);
+          setErrorMessage(undefined);
+        } else {
+          const errorDescription =
+            error.response?.data?.message ||
+            error.response?.data?.errorMessage ||
+            "Signup failed";
+          setErrorMessage(errorDescription);
+          setValidationErrors({});
+        }
       });
   };
 
@@ -66,6 +80,9 @@ function SignupPage() {
           className="border rounded p-2 w-full mb-6"
           autoComplete="off"
         />
+        {validationErrors.email && (
+          <p className="text-red-500 text-sm mb-4">{validationErrors.email}</p>
+        )}
 
         <label
           htmlFor="password"
@@ -82,6 +99,11 @@ function SignupPage() {
           className="border rounded p-2 w-full mb-6"
           autoComplete="off"
         />
+        {validationErrors.password && (
+          <p className="text-red-500 text-sm mb-4">
+            {validationErrors.password}
+          </p>
+        )}
 
         <label
           htmlFor="username"
@@ -98,6 +120,11 @@ function SignupPage() {
           className="border rounded p-2 w-full mb-6"
           autoComplete="off"
         />
+        {validationErrors.username && (
+          <p className="text-red-500 text-sm mb-4">
+            {validationErrors.username}
+          </p>
+        )}
 
         <button
           type="submit"
