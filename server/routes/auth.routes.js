@@ -4,6 +4,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const rateLimit = require("express-rate-limit");
 const { body, validationResult } = require("express-validator");
+const zxcvbn = require("zxcvbn");
 
 const { isAuthenticated } = require("../middleware/jwt.middlewares");
 
@@ -41,11 +42,22 @@ const validateSignup = [
     .isLength({ min: 8 })
     .withMessage("Password must be at least 8 characters long")
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
-    .withMessage("Password must contain at least one lowercase letter, one uppercase letter, and one number"),
+    .withMessage(
+      "Password must contain at least one lowercase letter, one uppercase letter, and one number",
+    )
+    .custom((value) => {
+      const result = zxcvbn(value);
+      if (result.score < 3) {
+        throw new Error(
+          `Password is too weak. Suggestions: ${result.feedback.suggestions.join(", ")}`,
+        );
+      }
+      return true;
+    }),
 ];
 
 // POST /api/auth/signup - User registration
-router.post("/signup", validateSignup, async (req, res) => {
+router.post("/signup", signupLimiter, validateSignup, async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
